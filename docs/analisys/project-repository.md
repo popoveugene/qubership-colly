@@ -35,18 +35,16 @@ This document describes the structure and contents of the Project repository.
 
 #### [Defaults] `parameters.yaml`
 
-<!-- Currently, this file has no contents -->
+отдельный интерфейс
 
 ```yaml
 # Optional
-# Global list of users with access permissions for all projects
-accessGroups:
-  # Mandatory
-  # User name
-  name: string
-  # Optional
-  # User permissions
-  permissions: enum[RO, RW]
+# список rw/ro имен и AD групп пользователей под которыми будут создаваться все кластера всех проектов
+# SSP использует эти параметры при создание кластера
+clusters:
+  roAdGroups: list of strings
+  rwAdGroups: list of strings
+  owners: list of strings
 ```
 
 #### [Defaults] `credentials.yaml`
@@ -75,6 +73,7 @@ accessGroups:
 # Platform type for clusters in this project
 # "ocp" stands for OpenShift, "k8s" for generic Kubernetes
 clustersPlatform: enum[ ocp, k8s ]
+# аттрибут который будет использоваться для генерации клауд паспорта
 mavenRepoName: string
 # Mandatory
 repositories:
@@ -103,9 +102,6 @@ repositories:
       # EnvGene environment template artifact name (application from the application:version notation)
       # For example platform:20251215.113905-22
       name: string
-      # Optional
-      # List of template names inside the artifact
-      templateDescriptorNames: list of strings
       # Optional
       # Template name that is used by default when creating project environments.
       # Should be included in templateDescriptorNames

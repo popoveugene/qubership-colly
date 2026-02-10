@@ -270,31 +270,38 @@ This is not the full list of attributes for these objects, but only those that w
 
 - [ ] deploymentOperations
 
-1. как определяем CLEAN_INSTALL (achka не отдает этот аттрибут)
-2. переименовать mode CLEAN_INSTALL -> "" ROLLING_UPDATE -> ""
+  1. как определяем CLEAN_INSTALL (achka не отдает этот аттрибут)?
+  2. переименовать mode CLEAN_INSTALL -> "??" ROLLING_UPDATE -> "??"
 
-- делаем группировку по deployment_session_id - получаем мапу deploymentSessionId -> список апликейшенов которые деплоились за эту сессию (возможно с нескольких СД)
-  - что делаем если ставились отдельно ДД? **просто игнорим**
-- для каждой сессии достаем список аппликейшенов и группируем их в мапу sd_version -> список аппликейшенов
-- для каждого списка аппликейшенов вычисляем
-  - самую раннюю (позднюю) дату деплоя
-  - статус - если хотя бы один апп упал, значит всё failed
-  - по имени СД вычисляем ее тип - PRODUCT/PROJECT 
-  - mode - всегда rolling update - clean install определять по дате создания versions конфиг мапы??
+  solution: удаляем deploy mode. потому что в Арго мире нет CLEAN_INSTALL -> есть только один тип деплоя.
+
+  - делаем группировку по deployment_session_id - получаем мапу deploymentSessionId -> список апликейшенов которые деплоились за эту сессию (возможно с нескольких СД)
+    - что делаем если ставились отдельно ДД? **просто игнорим**
+  - для каждой сессии достаем список аппликейшенов и группируем их в мапу sd_version -> список аппликейшенов
+  - для каждого списка аппликейшенов вычисляем
+    - самую раннюю (позднюю) дату деплоя
+    - статус - если хотя бы один апп упал, значит всё failed
+    - по имени СД вычисляем ее тип - PRODUCT/PROJECT
+    - mode - всегда rolling update - clean install определять по дате создания versions конфиг мапы??
 
 - [ ] `/colly/inventory-service/v2/projectDefaults`
 
-этот интерфейс отдает то что лежит в `/defaults/parameters.yaml` в проектном гите
+  этот интерфейс отдает то что лежит в `/defaults/parameters.yaml` в проектном гите
 
 - [ ] `MAVEN_REPO_NAME`
 
-- добавляем mavenRepoName аттрибут проекта
-- нужно ли MAVEN_REPO_URL? если да, то он один на проект?
+  - добавляем mavenRepoName аттрибут проекта
+  - нужно ли MAVEN_REPO_URL? если да, то он один на проект?
+  - есть предложение положить параметры необходимы для паспорта под одну резиновую мапу
 
-```text
-MAVEN_REPO_URL: https://artifactorycn.netcracker.com/
-MAVEN_REPO_NAME: pd.saas-global.mvn.group
-```
+  ```text
+  MAVEN_REPO_URL: https://artifactorycn.netcracker.com/ -> пока не нужно
+  MAVEN_REPO_NAME: pd.saas-global.mvn.group
+  ```
+
+- [ ] templateDescriptorNames дискавери из артифакта. Сейчас у Егора. Стоит забрать?
+  - Забрать нужно - ввести в Колли интерфейс, который получает апп:вер, испоьзуя апп/рег дефы, скачивает артифакт, обрабатывая контент, возвращает список темплейтов артифакте
+  - Положим в беклог, возьмем позже
 
 ## To implement
 
@@ -334,3 +341,6 @@ MAVEN_REPO_NAME: pd.saas-global.mvn.group
 - [ ] Support `inventory.cloudPassport` during Cluster "discovery". Priority is unclear, not doing it yet
 - [x] support branch for instance repo **2.5.0**
 - [ ] Add `ACHKA_URL` finding logic
+- [ ] Add defaults
+- [ ] Add maven url
+- [ ] Remove `envgeneArtifact.templateDescriptorNames`
