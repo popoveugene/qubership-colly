@@ -36,7 +36,6 @@ This is not the full list of attributes for these objects, but only those that w
 | `namespaces`                                      | list of [Namespace](#namespace) objects                             | List of associated namespaces                                                                                                                                                                                                                      |
 | `cluster`                                         | [Cluster](#cluster) object                                          | Associated cluster                                                                                                                                                                                                                                 |
 | `monitoringData.lastIdpLoginDate`                 | string, date-time                                                   | Time of the last successful login to the IDP associated with the Environment                                                                                                                                                                       |
-| `region`                                          | string                                                              | Geographical region associated with the Environment. This attribute is user-defined                                                                                                                                                                |
 | `lastSuccessfulSyncAt`                            | string                                                              | Time of the last successful update information from the cluster                                                                                                                                                                                    |
 
 ## Namespace
@@ -47,10 +46,11 @@ This is not the full list of attributes for these objects, but only those that w
 
 ## Cluster
 
-| Colly Attribute                         | Attribute Type   | Description                                                     |
-|-----------------------------------------|------------------|-----------------------------------------------------------------|
-| `name`                                  | string           | Cluster name, cannot be changed after creation                  |
-| `lastSuccessfulSyncAt`                  | string           | Time of the last successful update information from the cluster |
+| Colly Attribute                         | Attribute Type   | Description                                                                         |
+|-----------------------------------------|------------------|-------------------------------------------------------------------------------------|
+| `name`                                  | string           | Cluster name, cannot be changed after creation                                      |
+| `lastSuccessfulSyncAt`                  | string           | Time of the last successful update information from the cluster                     |
+| `region`                                | string           | Geographical region associated with the Environment. This attribute is user-defined |
 
 ## Colly instance
 
@@ -323,6 +323,94 @@ This is not the full list of attributes for these objects, but only those that w
 - [ ] if one paramset failed to save, all paramsets will not be saved
 
 - [ ] what is the SSP role model, how does it affect Colly (who changes the owner on env, who changes ui paramsets, ...). Integration via shared idp? How is this related to `effectiveAccessGroups`
+  - перейти на общий idp
+
+- [ ] `region` on cluster
+  - `region` - новый аттрибут опциональный, который забирается из клауд паспорта
+  - RO аттрибут
+  - удалить с энва
+
+- [ ] ES
+  - [ ] нужен ли `ui_override_committed` стейт параметра
+  - [ ] отображать ли ES для энва или нс (без аппа)
+    - [ ] отображать деплой и рантайм контекст нужно только для нс + апп
+    - [ ] отображать пайплайн контекст нужно для всего энва
+
+- [ ] PS
+  - [x] если один из парамсетов не может быть создан, ддругие в запросе тоже не создаются
+  - [ ] у pipeline контекста только энв уровень (нельзя привязать к нс или аппу)
+
+- [x] cmApproach
+
+    1. При создание энв деф, SSP дополнительно передает:
+
+          ```yaml
+          metadata:
+            cmApproach: enum[cmdb, noCmdb] # Optional
+          ```
+
+    2. В Колли энве появляется новый аттрибут `cmApproach`, который читается из env_definition `metadata.cmApproach`. # Default - Null/Unknown
+       1. Через API должна быть возможность изменить значение
+
+    3. В Колли проекте у репозитория с типом `envgeneInstance` появляется новый аттрибут `defaultCmApproach`. Этот аттрибут используется SSP для того что бы не заставлять пользователя задавать `cmApproach` при создание каждого энва. Этот аттрибут задается пользователем только вручную в гите
+
+    4. AI: Найти правильное место для cmdb url/login/token для конкретного энва. В ES?
+       1. ES генерируется и при `cmdb` подходе
+       2. Делаем отдельно от 1-3
+
+- [ ] Colly-to-Prod
+  1. выдаем версию с этим функционалом
+  2. SSP тестирует
+  3. эта версия Колли устанавливается на прод
+  4. ???
+  - **Step 1**
+    - [Done] Проверка перформанса при работе с большим энвген инстансным репозиториев
+    - [Done] `gitGroupUrl`
+    - [Done] Add DCL to `repositories[].type` enum
+    - [Done] Deletion removed envs from Colly cash
+    - [Done] Make `repositories[].token` optional
+    - [Done] Remove `repositories[].token`
+    - move `region` from env to cluster. RO. Get from Cloud Passport
+  - **Step 2**
+    - `cmApproach`, `defaultCmApproach`
+    - change enum env `status` - `PLANNED`, `PROVISION_FAILED`, `CREATED`
+    - OQ: Что делаем с `accessGroups`, `effectiveAccessGroups` on Environment?
+      - переносим из под `env.metadata` куда то? или что то другое?
+    - Add `lastSuccessfulSyncAt` to environment to inventory service metadata
+    - Add `owners` to Cluster
+      - To agree where to store
+    - CMDB UI
+      - `GET /api/v1/environments/{environmentId}/applications` **P3**
+      - paramset **P3**
+        - reset **P4**
+        - complex value support **P3**
+        - добавить валидацию - на неймспейс уровне нельзя задать параметры пайплайн контекста
+      - ES **P3.5**
+        - `originalValue`
+        - кейс удаление заоверрайженного ранее параметра !!!
+        - repo encryption
+          - до этого (если crypt: false OR заинкрипченные файлы):
+            - отдавать на `POST /api/v1/environments/{environmentId}/ui-parameters/effective-set` ошибку
+            - не кэшировать ES и UI парамсеты
+
+- [ ] Cloud Release
+  - тесты
+    - создать инстанс, проект репо (есть контент для этих реп)
+      - Project git repo sample - https://github.com/ormig/project-git-sample
+      - Instance Repo sample - https://github.com/ormig/cloud-passport-samples.git
+    - обновить тесты
+  - promote
+    - Вероника добавляет Колли в исключение для того что бы при релизе с помощью дженкинс джобы dtrust не падал
+  - ztd
+    - [Done] idp configuration
+    - redis CR
+  - labels
+  - access to cloud release
+    - все сделали, ждем пока предоставят
+  - добавить кору в депенды
+  - [Done] получить доступ к клауд релиз кластеру
+  - проверить redis CR на нашем кластере
+  - устранить дискрепанси между внутренним и внешним хелмом
 
 ## To implement
 
@@ -352,7 +440,8 @@ This is not the full list of attributes for these objects, but only those that w
 - [ ] The configuration for `monitoringData` is currently shared across all environments - it needs to be made more granular
 - [x] Add `accessGroups`, `effectiveAccessGroups` to Environment. **2.3.0**
 - [ ] add handling of Redis failure - if it fails, need to re-sync with Git and clusters
-- [ ] add Redis probe - completed discovery
+- [ ] добавить  re-sync with Git and clusters при старте Колли
+  - [ ] рединес проба Redis probe - completed discovery
 - [ ] add anti-affinity rules
 - [x] add `deployPostfix` **2.4.0**
 - [ ] add BG support for `deployPostfix`
@@ -365,18 +454,32 @@ This is not the full list of attributes for these objects, but only those that w
 - [x] Add `mavenRepoName` to Project **2.7.0**
 - [x] Add `clusterDefaults` to Project **2.7.0**
 - [x] Remove `envgeneArtifact.templateDescriptorNames` from Project
-- [ ] add `lastSuccessfulSyncAt` **-**
+- [ ] add `lastSuccessfulSyncAt` **P2**
   - [ ] to Repository
   - [x] to inventory service metadata
 - [x] Remove `deploymentVersion` and its generation logic
-- [ ] Cloud Release **P2**
+- [ ] Cloud Release **P1**
 - [ ] CMDB UI
-  - [ ] paramset **P1**
+  - [ ] paramset **P3**
     - [x] get
-    - [ ] set
-      - [ ] delete paramset and association if POST with empty content is received (add to docs)
-  - [ ] ES **P1**
+    - [x] set
+      - [x] delete paramset and association if POST with empty content is received (add to docs)
+    - [ ] reset **P4**
+    - [ ] `GET /api/v1/environments/{environmentId}/applications`
+    - [ ] complex value support
+  - [ ] ES **P3.5**
+    - [ ] `originalValue`
+    - [ ] кейс удаление заоверайженного ранее параметра !!!
+    - [ ] repo encryption
+      - до этого (если crypt: false OR заинкрипченные файлы):
+        - отдавать на `POST /api/v1/environments/{environmentId}/ui-parameters/effective-set` ошибку
+        - не кэшировать ES и UI парамсеты
 - [ ] Add DCL to `repositories[].type` enum
 - [ ] Deletion removed envs from Colly cash
-- [ ] Add `gitGroupUrl`
+- [x] Add `gitGroupUrl` **-**
+- [x] remove roles, relay to idp **-**
 - [ ] Make `repositories.url` `repositories.token` optional
+- [ ] move `region` from env to cluster. RO. Get from Cloud Passport
+- [ ] change enum env `status` - `PLANNED`, `PROVISION_FAILED`, `CREATED`
+<!-- - [ ] Add `cmApproach` to env **P4**
+- [ ] Add `defaultCmApproach` to project **P4** -->

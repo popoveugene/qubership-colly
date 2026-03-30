@@ -54,6 +54,16 @@ clusters:
   owners: list of strings
 ```
 
+```yaml
+# Optional
+# List of rw/ro names and AD user groups under which all clusters of all projects will be created
+# these parameters are used when creating a cluster
+clusters:
+  roAdGroups: list of strings
+  rwAdGroups: list of strings
+  owners: list of strings
+```
+
 #### [Defaults] `credentials.yaml`
 
 Currently, this file has no contents
@@ -82,14 +92,17 @@ accessGroups:
 clustersPlatform: enum[ ocp, k8s ]
 # Attribute used for Cloud Passport generation
 mavenRepoName: string
-  # Optional
-  # Full URL to the git group where project repositories are located
-  gitGroupUrl: string
+# Optional
+# Full URL to the git group where project repositories are located
+# На основе этого аттрибута вычисляются repositories[].url 
+# Или на всех repositories заданы url или задан этот аттрибут
+gitGroupUrls:
+  - region: string
+    gitGroupUrl: string
 # Optional
 repositories:
   - # Mandatory
     # All repositories with type envgeneInstance must be specified because Colly uses them; url is mandatory for them
-
     # Assumption: repository with type envgeneTemplate is only one per project
     type: enum[ envgeneInstance, envgeneTemplate, clusterProvision, envProvision, solutionDeploy, DCL ]
     # Optional
