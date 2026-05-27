@@ -54,16 +54,6 @@ clusters:
   owners: list of strings
 ```
 
-```yaml
-# Optional
-# List of rw/ro names and AD user groups under which all clusters of all projects will be created
-# these parameters are used when creating a cluster
-clusters:
-  roAdGroups: list of strings
-  rwAdGroups: list of strings
-  owners: list of strings
-```
-
 #### [Defaults] `credentials.yaml`
 
 Currently, this file has no contents
@@ -86,6 +76,13 @@ type: enum[ project, product ]
 # List of groups with RW access rights to objects of this project
 accessGroups:
   - string
+# Optional
+# List of rw/ro names and AD user groups under which all clusters of all projects will be created
+# these parameters are used when creating a cluster. Мержится аппендом если задано и на Defaults и Projects
+clusters:
+  roAdGroups: list of strings
+  rwAdGroups: list of strings
+  owners: list of strings
 # Optional
 # Platform type for clusters in this project
 # "ocp" stands for OpenShift, "k8s" for generic Kubernetes
